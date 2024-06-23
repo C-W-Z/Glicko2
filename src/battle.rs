@@ -4,7 +4,7 @@ use std::io::{self, Write};
 
 use crate::structs::{BattleStat, Character, Match, MatchResult};
 
-pub fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
+fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
     let max = pool
         .iter()
         .max_by_key(|c| c.hist.battles())
@@ -33,7 +33,7 @@ pub fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
     (first_index, second_index)
 }
 
-pub fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat) {
+fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat) {
     let mut choice: String = Default::default();
     loop {
         println!("-----------------------------");
@@ -100,7 +100,7 @@ pub fn battles(pool: &mut Vec<Character>) -> Vec<Match> {
     let (mut left, mut right) = pick_2_player_ids(&pool);
 
     loop {
-        let (res, stat) = fight(0, pool[left].name.as_str(), pool[right].name.as_str());
+        let (res, stat) = fight(records.len() + 1, pool[left].name.as_str(), pool[right].name.as_str());
 
         match stat {
             BattleStat::Next => {

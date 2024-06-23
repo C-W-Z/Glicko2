@@ -29,7 +29,7 @@ pub struct Match {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Glicko {
+pub struct Rank {
     pub rati: f64, // rating
     pub devi: f64, // rating deviation
     pub vola: f64, // rating volatility
@@ -48,17 +48,25 @@ pub struct History {
 pub struct Character {
     pub id: usize,
     pub name: String,
-    pub rate: Glicko,  // glicko ranking information
+    pub rank: Rank,    // glicko ranking information
     pub hist: History, // historical stats
 }
 
-impl Glicko {
+impl Rank {
     pub fn new() -> Self {
         Self {
             rati: (1500.0),
             devi: (350.0),
             vola: (0.06),
         }
+    }
+    pub fn glicko_1_to_2_scale(&mut self) {
+        self.rati = (self.rati - 1500.0) / 173.7178;
+        self.devi = self.devi / 173.7178;
+    }
+    pub fn glicko_2_to_1_scale(&mut self) {
+        self.rati = self.rati * 173.7178 + 1500.0;
+        self.devi = self.devi * 173.7178;
     }
 }
 
@@ -82,7 +90,7 @@ impl Character {
         Self {
             id: (id),
             name: (name),
-            rate: Glicko::new(),
+            rank: Rank::new(),
             hist: History::new(),
         }
     }
