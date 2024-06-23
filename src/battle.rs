@@ -17,8 +17,7 @@ fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
     // Calculate the weights (inverse of the battles)
     let weights: Vec<_> = pool
         .iter()
-        // Plus one is to give the character with the most battles a small chance of being selected
-        .map(|c: &Character| max - c.hist.battles() + 1)
+        .map(|c: &Character| ((max - c.hist.battles()) as f64).exp2())
         .collect();
 
     // Create a weighted index distribution
@@ -36,7 +35,7 @@ fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
 }
 
 fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat) {
-    let mut choice: String = Default::default();
+    let mut choice: String = String::new();
     loop {
         display::start_fight(battle_id, left, right);
         let _ = io::stdout().flush();
