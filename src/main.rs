@@ -4,13 +4,13 @@ Paper: http://www.glicko.net/glicko/glicko2.pdf
 */
 
 mod battle;
+mod display;
 mod glicko;
 mod structs;
 
-use glicko::update_history;
-
 use crate::battle::battles;
-use crate::glicko::{calculate_results, calculate_ranking};
+use crate::display::list_ranking;
+use crate::glicko::{calculate_ranking, calculate_results, update_history};
 use crate::structs::{initialize_characters, store_characters};
 
 fn main() {
@@ -20,8 +20,6 @@ fn main() {
     update_history(&mut characters, &records, &ranks);
     calculate_results(&mut characters, &records);
     (ranked_chara, ranks) = calculate_ranking(&characters);
-    for c in ranked_chara.iter() {
-        println!("#{}: {} {} ± {}", ranks[&c.id], c.name, c.rank.rati, c.rank.devi);
-    }
+    list_ranking(&ranked_chara, &ranks);
     store_characters(&characters);
 }

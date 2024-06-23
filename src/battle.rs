@@ -1,8 +1,10 @@
+use crate::{
+    display,
+    structs::{BattleStat, Character, Match, MatchResult},
+};
 use rand::distributions::WeightedIndex;
 use rand::prelude::*;
 use std::io::{self, Write};
-
-use crate::structs::{BattleStat, Character, Match, MatchResult};
 
 fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
     let max = pool
@@ -36,9 +38,7 @@ fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
 fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat) {
     let mut choice: String = Default::default();
     loop {
-        println!("-----------------------------");
-        println!("Battle #{}: {} vs {}", battle_id, left, right);
-        print!("Pick [ 'h' for help ] >> ");
+        display::start_fight(battle_id, left, right);
         let _ = io::stdout().flush();
         choice.clear();
 
@@ -50,38 +50,34 @@ fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat)
         if choice.ends_with('1') {
             // I like left
             res = MatchResult::AWin;
-            println!("Chose - {}!", left);
+            display::fight_result(left);
         } else if choice.ends_with('2') {
             // I like right
             res = MatchResult::BWin;
-            println!("Chose - {}!", right);
+            display::fight_result(right);
         } else if choice.ends_with("0") {
             // Draw
-            println!("Chose - Draw!");
+            display::fight_result("Draw!");
             res = MatchResult::Draw;
         } else if choice.ends_with('d') {
             // I dislike them both!
             res = MatchResult::BothLose;
-            println!("Disliked both!");
+            display::fight_dislike_both();
         } else if choice.ends_with('u') {
             // Undo
             if battle_id == 0 {
-                println!("This is the first battle!");
+                display::fight_undo_err();
                 continue;
             }
-            println!("Going back...");
+            display::fight_undo();
             return (res, BattleStat::Undo);
         } else if choice.ends_with('h') {
             // Help
-            println!("1/2 to choose left/right");
-            println!("0 for draws");
-            println!("d if you DISLIKE BOTH of them");
-            println!("u to UNDO");
-            println!("<Enter> to end this session");
+            display::fight_help();
             continue;
         } else {
             // End
-            println!("Finishing rating period...");
+            display::fight_end();
             return (res, BattleStat::End);
         }
 
@@ -90,10 +86,7 @@ fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat)
 }
 
 pub fn battles(pool: &[Character]) -> Vec<Match> {
-    println!(
-        "=== Starting a new session with {} characters ===",
-        pool.len()
-    );
+    display::start_session(pool.len());
 
     let mut records: Vec<Match> = Vec::new();
 
@@ -101,7 +94,7 @@ pub fn battles(pool: &[Character]) -> Vec<Match> {
 
     loop {
         let (res, stat) = fight(
-            records.len() + 1,
+            records.len(),
             pool[left].name.as_str(),
             pool[right].name.as_str(),
         );
