@@ -89,7 +89,7 @@ fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat)
     }
 }
 
-pub fn battles(pool: &mut Vec<Character>) -> Vec<Match> {
+pub fn battles(pool: &[Character]) -> Vec<Match> {
     println!(
         "=== Starting a new session with {} characters ===",
         pool.len()
@@ -100,7 +100,11 @@ pub fn battles(pool: &mut Vec<Character>) -> Vec<Match> {
     let (mut left, mut right) = pick_2_player_ids(&pool);
 
     loop {
-        let (res, stat) = fight(records.len() + 1, pool[left].name.as_str(), pool[right].name.as_str());
+        let (res, stat) = fight(
+            records.len() + 1,
+            pool[left].name.as_str(),
+            pool[right].name.as_str(),
+        );
 
         match stat {
             BattleStat::Next => {
@@ -112,11 +116,6 @@ pub fn battles(pool: &mut Vec<Character>) -> Vec<Match> {
                 (left, right) = pick_2_player_ids(&pool);
             }
             BattleStat::End => {
-                records.push(Match {
-                    a: (left),
-                    b: (right),
-                    res: (res),
-                });
                 break;
             }
             BattleStat::Undo => {

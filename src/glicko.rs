@@ -7,6 +7,9 @@ const TAU: f64 = 0.2;
 // Convergence tolerance
 const EPSILON: f64 = 1e-6;
 
+// The maximum number of old ratings/ranks stored
+const MAX_HIST: usize = 5;
+
 fn g(phi: f64) -> f64 {
     1.0 / (1.0 + 3.0 * (phi / PI).powi(2)).sqrt()
 }
@@ -69,11 +72,11 @@ fn new_deviation(phi: f64, new_sigma: f64, v: f64) -> f64 {
     1.0 / (1.0 / phi_star.powi(2) + 1.0 / v.powi(2)).sqrt()
 }
 
-fn new_rating(mu: f64, new_phi:f64, v:f64, delta:f64) -> f64 {
-    mu + new_phi * v / delta
+fn new_rating(mu: f64, new_phi: f64, v: f64, delta: f64) -> f64 {
+    mu + new_phi * delta / v
 }
 
-pub fn calculate_results(characters: &mut Vec<Character>, records: Vec<Match>) {
+pub fn calculate_results(characters: &mut Vec<Character>, records: &[Match]) {
     if records.is_empty() {
         return;
     }
@@ -91,11 +94,11 @@ pub fn calculate_results(characters: &mut Vec<Character>, records: Vec<Match>) {
     let mut delta: HashMap<usize, f64> = HashMap::new();
 
     // initialize hashmaps
-    for battle in records.iter() {
-        v.insert(battle.a, 0.0);
-        v.insert(battle.b, 0.0);
-        delta.insert(battle.a, 0.0);
-        delta.insert(battle.b, 0.0);
+    for m in records.iter() {
+        v.insert(m.a, 0.0);
+        v.insert(m.b, 0.0);
+        delta.insert(m.a, 0.0);
+        delta.insert(m.b, 0.0);
     }
 
     for m in records.iter() {
@@ -136,13 +139,84 @@ pub fn calculate_results(characters: &mut Vec<Character>, records: Vec<Match>) {
 
     for c in characters.iter_mut() {
         if !v.contains_key(&c.id) {
+            // Convert the ratings and RD’s onto the Glicko-1 scale
+            c.rank.glicko_2_to_1_scale();
             continue;
         }
         // Determine the new value of the volatility, deviation, and rating
-        c.rank.vola = new_volatility(v[&c.id], delta[&c.id], c.rank.vola, c.rank.devi, TAU, EPSILON);
+        c.rank.vola = new_volatility(
+            v[&c.id],
+            delta[&c.id],
+            c.rank.vola,
+            c.rank.devi,
+            TAU,
+            EPSILON,
+        );
         c.rank.devi = new_deviation(c.rank.devi, c.rank.vola, v[&c.id]);
         c.rank.rati = new_rating(c.rank.rati, c.rank.devi, v[&c.id], delta[&c.id]);
+
         // Convert the ratings and RD’s onto the Glicko-1 scale
         c.rank.glicko_2_to_1_scale();
+    }
+}
+
+pub fn calculate_ranking(characters: &[Character]) -> (Vec<Character>, HashMap<usize, usize>) {
+    let mut list = Vec::from(characters);
+    list.sort_by(|a, b| {
+        if a.rank.rati != b.rank.rati {
+            b.rank.rati.total_cmp(&a.rank.rati)
+        } else if a.rank.devi != b.rank.devi {
+            b.rank.devi.total_cmp(&a.rank.devi)
+        } else {
+            b.id.cmp(&a.id)
+        }
+    });
+
+    let mut ranks: HashMap<usize, usize> = HashMap::with_capacity(characters.len());
+    let mut rank = 1;
+    let mut max_rating = list[0].rank.rati;
+    for c in list.iter() {
+        if c.rank.rati < max_rating {
+            rank += 1;
+            max_rating = c.rank.rati;
+        }
+        ranks.insert(c.id, rank);
+    }
+
+    (list, ranks)
+}
+
+pub fn update_history(
+    characters: &mut Vec<Character>,
+    records: &[Match],
+    ranks: &HashMap<usize, usize>,
+) {
+    for m in records.iter() {
+        match m.res {
+            MatchResult::AWin => {
+                characters[m.a].hist.wins += 1;
+                characters[m.b].hist.loss += 1;
+            }
+            MatchResult::BWin => {
+                characters[m.a].hist.loss += 1;
+                characters[m.b].hist.wins += 1;
+            }
+            MatchResult::Draw => {
+                characters[m.a].hist.draw += 1;
+                characters[m.b].hist.draw += 1;
+            }
+            MatchResult::BothLose => {
+                characters[m.a].hist.loss += 1;
+                characters[m.b].hist.loss += 1;
+            }
+        };
+    }
+    for c in characters.iter_mut() {
+        c.hist.old_rate.push_back(c.rank.rati);
+        c.hist.old_rank.push_back(ranks[&c.id]);
+        if c.hist.old_rate.len() > MAX_HIST {
+            c.hist.old_rate.pop_front();
+            c.hist.old_rank.pop_front();
+        }
     }
 }

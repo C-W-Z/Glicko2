@@ -131,9 +131,9 @@ pub fn initialize_characters() -> Vec<Character> {
         println!(" Success");
     }
 
-    for c in characters.iter() {
-        println!("#{}: {}", c.id, c.name);
-    }
+    // for c in characters.iter() {
+    //     println!("#{}: {}", c.id, c.name);
+    // }
     characters
 }
 
