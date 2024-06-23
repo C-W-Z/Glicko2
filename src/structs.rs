@@ -8,25 +8,26 @@ use std::{
 
 #[derive(Serialize, Deserialize)]
 pub struct Glicko {
-    rati: f64, // rating
-    devi: f64, // rating deviation
-    vola: f64, // rating volatility
+    pub rati: f64, // rating
+    pub devi: f64, // rating deviation
+    pub vola: f64, // rating volatility
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct History {
-    wins: usize,
-    loss: usize,
-    draw: usize,
-    old_rate: VecDeque<f64>, // tracks the rating and rank some sessions ago
-    old_rank: VecDeque<usize>,
+    pub wins: usize,
+    pub loss: usize,
+    pub draw: usize,
+    pub old_rate: VecDeque<f64>, // tracks the rating and rank some sessions ago
+    pub old_rank: VecDeque<usize>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Character {
-    name: String,
-    rate: Glicko,  // glicko ranking information
-    hist: History, // historical stats
+    pub id: usize,
+    pub name: String,
+    pub rate: Glicko,  // glicko ranking information
+    pub hist: History, // historical stats
 }
 
 impl Glicko {
@@ -49,11 +50,15 @@ impl History {
             old_rank: VecDeque::new(),
         }
     }
+    pub fn battles(&self) -> usize {
+        self.wins + self.loss + self.draw
+    }
 }
 
 impl Character {
-    pub fn new(name: String) -> Self {
+    pub fn new(id: usize, name: String) -> Self {
         Self {
+            id: (id),
             name: (name),
             rate: Glicko::new(),
             hist: History::new(),
@@ -67,6 +72,7 @@ const INIT_PATH: &str = "src/init.txt";
 pub fn initialize_characters() -> Vec<Character> {
     let mut characters: Vec<Character> = Vec::new();
 
+    // Try read data from file
     let read = read_characters();
 
     if !read.is_empty() {
@@ -74,13 +80,15 @@ pub fn initialize_characters() -> Vec<Character> {
         characters = read;
     } else {
         print!("Read {} Failed, Read {}", DATA_PATH, INIT_PATH);
+
+        // Initialize data from file
         let file = File::open(&INIT_PATH).unwrap();
         let reader = BufReader::new(file);
 
-        for line in reader.lines() {
+        for (id, line) in reader.lines().enumerate() {
             match line {
                 Ok(l) => {
-                    let chara = Character::new(l);
+                    let chara = Character::new(id, l);
                     characters.push(chara);
                 }
                 Err(error) => {
@@ -93,23 +101,31 @@ pub fn initialize_characters() -> Vec<Character> {
         println!(" Success");
     }
 
-    for (i, c) in characters.iter().enumerate() {
-        println!("#{}: {}", i + 1, c.name);
+    for c in characters.iter() {
+        println!("#{}: {}", c.id, c.name);
     }
     characters
 }
 
 pub fn read_characters() -> Vec<Character> {
+    // Read data from file
     let result = fs::read_to_string(DATA_PATH);
     match result {
         Ok(content) => {
-            return serde_json::from_str(&content).unwrap();
+            // Deserialize from json string
+            let objs = serde_json::from_str(&content);
+            match objs {
+                Ok(ret) => return ret,
+                Err(_) => return Vec::new(),
+            }
         }
         Err(_) => return Vec::new(),
     }
 }
 
-pub fn store_characters(characters: Vec<Character>) {
+pub fn store_characters(characters: &[Character]) {
+    // Serialize to json string
     let serialized = serde_json::to_string(&characters).unwrap();
+    // Write string to file
     fs::write(DATA_PATH, serialized).unwrap();
 }
