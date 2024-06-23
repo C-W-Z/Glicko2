@@ -6,14 +6,36 @@ use std::{
     process::exit,
 };
 
-#[derive(Serialize, Deserialize)]
+pub enum BattleStat {
+    Next,
+    End,
+    Undo,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum MatchResult {
+    AWin,
+    BWin,
+    Draw,
+    BothLose,
+}
+
+// A matchup between two characters
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Match {
+    pub a: usize,         // the id of first character
+    pub b: usize,         // the id of first character
+    pub res: MatchResult, // result of the match
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Glicko {
     pub rati: f64, // rating
     pub devi: f64, // rating deviation
     pub vola: f64, // rating volatility
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct History {
     pub wins: usize,
     pub loss: usize,
@@ -22,7 +44,7 @@ pub struct History {
     pub old_rank: VecDeque<usize>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Character {
     pub id: usize,
     pub name: String,
