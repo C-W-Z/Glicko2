@@ -1,13 +1,38 @@
 use crate::{
     display,
-    structs::{BattleStat, Character, Match, MatchResult},
+    structs::{Battle, BattleStat, Character, Match, MatchResult},
 };
 use rand::distributions::WeightedIndex;
 use rand::prelude::*;
 use std::{
     collections::{HashMap, HashSet},
-    io::{self, Write}
+    io::{self, Write},
 };
+
+const MAX_HIST: usize = 5;
+
+fn update_tmp_history(characters: &mut Vec<Character>, a: usize, b: usize) {
+    // characters[m.a].hist.battles() += 1
+    characters[a].hist.draw += 1;
+    characters[b].hist.draw += 1;
+
+    let name_a = characters[a].name.clone();
+    let name_b = characters[b].name.clone();
+    characters[a]
+        .hist
+        .recent
+        .push_back(Battle::new(name_b, MatchResult::Draw));
+    characters[b]
+        .hist
+        .recent
+        .push_back(Battle::new(name_a, MatchResult::Draw));
+    while characters[a].hist.recent.len() > MAX_HIST {
+        characters[a].hist.recent.pop_front();
+    }
+    while characters[b].hist.recent.len() > MAX_HIST {
+        characters[b].hist.recent.pop_front();
+    }
+}
 
 fn pick_2_player_ids(pool: &[Character], name_to_id: &HashMap<String, usize>) -> (usize, usize) {
     let max = pool
@@ -20,7 +45,13 @@ fn pick_2_player_ids(pool: &[Character], name_to_id: &HashMap<String, usize>) ->
     // Calculate the weights (inverse of the battles)
     let weights: Vec<_> = pool
         .iter()
-        .map(|c: &Character| (2.0 * (max - c.hist.battles()) as f64).exp2())
+        .map(|c: &Character| {
+            if max == c.hist.battles() {
+                return 0.0;
+            } else {
+                return (1 << (2 * (max - c.hist.battles()))) as f64;
+            }
+        })
         .collect();
 
     // Create a weighted index distribution
@@ -97,9 +128,10 @@ fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat)
 pub fn battles(pool: &[Character], name_to_id: &HashMap<String, usize>) -> Vec<Match> {
     display::start_session(pool.len());
 
+    let mut _pool = pool.to_vec();
     let mut records: Vec<Match> = Vec::new();
 
-    let (mut left, mut right) = pick_2_player_ids(&pool, name_to_id);
+    let (mut left, mut right) = pick_2_player_ids(&_pool, name_to_id);
 
     loop {
         let (res, stat) = fight(
@@ -111,7 +143,8 @@ pub fn battles(pool: &[Character], name_to_id: &HashMap<String, usize>) -> Vec<M
         match stat {
             BattleStat::Next => {
                 records.push(Match::new(left, right, res));
-                (left, right) = pick_2_player_ids(&pool, name_to_id);
+                update_tmp_history(&mut _pool, left, right);
+                (left, right) = pick_2_player_ids(&_pool, name_to_id);
             }
             BattleStat::End => {
                 break;
@@ -121,6 +154,8 @@ pub fn battles(pool: &[Character], name_to_id: &HashMap<String, usize>) -> Vec<M
                 left = last.a;
                 right = last.b;
                 records.pop();
+                _pool[left].hist.recent.pop_back();
+                _pool[right].hist.recent.pop_back();
             }
         }
     }
