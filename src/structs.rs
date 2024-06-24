@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::VecDeque,
+    collections::{HashMap, HashSet, VecDeque},
     fs::{self, File},
-    io::{BufRead, BufReader},
+    io::{self, BufRead, BufReader, Write},
     process::exit,
 };
 
@@ -100,40 +100,106 @@ const DATA_PATH: &str = "src/data.json";
 const INIT_PATH: &str = "src/init.txt";
 
 pub fn initialize_characters() -> Vec<Character> {
-    let mut characters: Vec<Character> = Vec::new();
-
     // Try read data from file
-    let read = read_characters();
+    let init = read_init_characters();
+    let mut read = read_characters();
 
-    if !read.is_empty() {
-        println!("Read {} Success", DATA_PATH);
-        characters = read;
-    } else {
-        print!("Read {} Failed, Read {}", DATA_PATH, INIT_PATH);
-
-        // Initialize data from file
-        let file = File::open(&INIT_PATH).unwrap();
-        let reader = BufReader::new(file);
-
-        for (id, line) in reader.lines().enumerate() {
-            match line {
-                Ok(l) => {
-                    let chara = Character::new(id, l);
-                    characters.push(chara);
-                }
-                Err(error) => {
-                    println!(" Failed");
-                    eprintln!("\nError: {}", error);
-                    exit(1);
-                }
-            }
-        }
-        println!(" Success");
+    if read.is_empty() {
+        return init;
     }
 
-    // for c in characters.iter() {
+    // println!("Read {} Success", DATA_PATH);
+    let read_len = read.len();
+
+    let mut init_name_id: HashMap<String, usize> = HashMap::new();
+    let mut read_names: HashSet<String> = HashSet::new();
+    for c in read.iter() {
+        read_names.insert(c.name.clone());
+    }
+    for c in init.iter() {
+        init_name_id.insert(c.name.clone(), c.id);
+        if !read_names.contains(&c.name) {
+            read.push(c.clone());
+        }
+    }
+
+    if read.len() != read_len {
+        println!("{:-<1$}", "", 36);
+        println!("Find new characters in init.txt");
+        for c in read[read_len..].iter() {
+            println!("#{}: {}", c.id, c.name);
+        }
+    }
+
+    let mut next_id = init.len();
+    for c in read.iter_mut() {
+        match init_name_id.get(&c.name) {
+            Some(id) => {
+                c.id = *id;
+            }
+            None => {
+                c.id = next_id;
+                next_id += 1;
+            }
+        }
+    }
+
+    read.sort_by_key(|c| c.id);
+    if read.len() != init.len() {
+        println!("{:-<1$}", "", 36);
+        println!("Find some characters not in init.txt");
+        for c in read[init.len()..].iter() {
+            println!("#{}: {}", c.id, c.name);
+        }
+        print!("Do you want to REMOVE them ? (Y/n) ");
+        let mut choice: String = String::new();
+        let _ = io::stdout().flush();
+        let _ = io::stdin().read_line(&mut choice);
+        if choice.to_uppercase().starts_with("Y") {
+            let _ = read.split_off(init.len());
+            println!("Remove Success!");
+        } else {
+            println!("Keep them exists.");
+        }
+    }
+
+    // for c in read.iter() {
     //     println!("#{}: {}", c.id, c.name);
     // }
+
+    read
+}
+
+pub fn read_init_characters() -> Vec<Character> {
+    let mut characters: Vec<Character> = Vec::new();
+
+    // Initialize data from file
+    let file = match File::open(&INIT_PATH) {
+        Ok(f) => f,
+        Err(error) => {
+            eprintln!("\nError: {}", error);
+            exit(1);
+        }
+    };
+    let reader = BufReader::new(file);
+
+    for (id, line) in reader.lines().enumerate() {
+        match line {
+            Ok(l) => {
+                let _l = l.trim().to_owned();
+                if _l.is_empty() {
+                    continue;
+                }
+                let chara = Character::new(id, _l);
+                characters.push(chara);
+            }
+            Err(error) => {
+                eprintln!("\nError: {}", error);
+                exit(1);
+            }
+        }
+    }
+
     characters
 }
 

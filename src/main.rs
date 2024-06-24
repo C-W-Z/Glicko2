@@ -8,16 +8,16 @@ mod display;
 mod glicko;
 mod structs;
 
-use std::io::{self, Write};
 use crate::battle::battles;
 use crate::display::{list_ranking, stat};
 use crate::glicko::{calculate_ranking, calculate_results, update_history};
 use crate::structs::{initialize_characters, store_characters};
+use std::io::{self, Write};
 
 fn main() {
     let mut characters = initialize_characters();
     let (mut ranked_chara, mut ranks) = calculate_ranking(&characters);
-    
+
     let mut choice: String = String::new();
     println!("=========~ Glicko2: Lobby ~=========");
     display::lobby_help();

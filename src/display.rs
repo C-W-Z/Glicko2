@@ -39,7 +39,7 @@ fn get_slice_in_ranked_chara<'a>(
 pub fn stat(character: &Character, ranked_chara: &[Character], ranks: &HashMap<usize, usize>) {
     println!("{:-<1$}", "", 58);
     println!(
-        "{0: <53}{1: >13}",
+        "{0: <45}{1: >13}",
         format!("~~ {} ~~", character.name),
         format!("Rank #{}/{}", ranks[&character.id], ranked_chara.len())
     );
