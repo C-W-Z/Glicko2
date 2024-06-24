@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use std::f64::consts::PI;
 
 // The system constant which constrains the change in volatility over time, needs to be set prior to application of the system
-const TAU: f64 = 0.2;
+// Reasonable choices are between 0.3 and 1.2
+const TAU: f64 = 0.5;
 // Convergence tolerance
 const EPSILON: f64 = 1e-6;
 
@@ -210,11 +211,19 @@ pub fn update_history(
                 characters[m.b].hist.loss += 1;
             }
         };
+        characters[m.a].hist.recent.push_back(m.clone());
+        characters[m.b].hist.recent.push_back(m.clone());
+        while characters[m.a].hist.recent.len() > MAX_HIST {
+            characters[m.a].hist.recent.pop_front();
+        }
+        while characters[m.b].hist.recent.len() > MAX_HIST {
+            characters[m.b].hist.recent.pop_front();
+        }
     }
     for c in characters.iter_mut() {
         c.hist.old_rate.push_back(c.rank.rati);
         c.hist.old_rank.push_back(ranks[&c.id]);
-        if c.hist.old_rate.len() > MAX_HIST {
+        while c.hist.old_rate.len() > MAX_HIST {
             c.hist.old_rate.pop_front();
             c.hist.old_rank.pop_front();
         }

@@ -46,23 +46,23 @@ fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat)
         let mut res = MatchResult::Draw;
 
         choice = choice.trim().to_string();
-        if choice.ends_with('1') {
+        if choice.starts_with('1') {
             // I like left
             res = MatchResult::AWin;
             display::fight_result(left);
-        } else if choice.ends_with('2') {
+        } else if choice.starts_with('2') {
             // I like right
             res = MatchResult::BWin;
             display::fight_result(right);
-        } else if choice.ends_with("0") {
+        } else if choice.starts_with("0") {
             // Draw
             display::fight_result("Draw!");
             res = MatchResult::Draw;
-        } else if choice.ends_with('d') {
+        } else if choice.starts_with('d') {
             // I dislike them both!
             res = MatchResult::BothLose;
             display::fight_dislike_both();
-        } else if choice.ends_with('u') {
+        } else if choice.starts_with('u') {
             // Undo
             if battle_id == 0 {
                 display::fight_undo_err();
@@ -70,7 +70,7 @@ fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat)
             }
             display::fight_undo();
             return (res, BattleStat::Undo);
-        } else if choice.ends_with('h') {
+        } else if choice.starts_with('h') {
             // Help
             display::fight_help();
             continue;

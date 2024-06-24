@@ -1,9 +1,10 @@
-use crate::structs::Character;
+use crate::structs::{Character, MatchResult};
 use std::collections::HashMap;
 
-fn print_rank_entry(c: &Character, rank: usize, tab:usize) {
+fn print_rank_entry(c: &Character, rank: usize, tab: usize) {
     print!("{:<1$}", "", tab);
-    println!("{:<4} {:<26}{}",
+    println!(
+        "{:<4} {:<26}{}",
         format!("{}.", rank),
         c.name,
         format!(
@@ -36,12 +37,17 @@ fn get_slice_in_ranked_chara<'a>(
     vec![]
 }
 
-pub fn stat(character: &Character, ranked_chara: &[Character], ranks: &HashMap<usize, usize>) {
+pub fn stat(
+    chara: &Character,
+    characters: &[Character],
+    ranked_chara: &[Character],
+    ranks: &HashMap<usize, usize>,
+) {
     println!("{:-<1$}", "", 58);
     println!(
         "{0: <45}{1: >13}",
-        format!("~~ {} ~~", character.name),
-        format!("Rank #{}/{}", ranks[&character.id], ranked_chara.len())
+        format!("~~ {} ~~", chara.name),
+        format!("Rank #{}/{}", ranks[&chara.id], ranked_chara.len())
     );
     println!("{:-<1$}", "", 58);
 
@@ -50,28 +56,28 @@ pub fn stat(character: &Character, ranked_chara: &[Character], ranks: &HashMap<u
         "{}",
         format!(
             "    {} ± {1:.0} | (volatility: {2:.6})",
-            format!("{:.2}", character.rank.rati),
-            character.rank.devi,
-            character.rank.vola
+            format!("{:.2}", chara.rank.rati),
+            chara.rank.devi,
+            chara.rank.vola
         )
     );
-    if character.rank.devi > 160.0 {
+    if chara.rank.devi > 160.0 {
         println!("    ⓘ The uncertainty is high, do more battles!\n");
     }
 
-    if !character.hist.old_rank.is_empty() {
+    if !chara.hist.old_rank.is_empty() {
         println!(
             "    -- Last {} {} --",
-            character.hist.old_rank.len(),
-            if character.hist.old_rank.len() > 1 {
+            chara.hist.old_rank.len(),
+            if chara.hist.old_rank.len() > 1 {
                 "sessions"
             } else {
                 "session"
             }
         );
-        let pt_diff = character.rank.rati - *character.hist.old_rate.front().unwrap();
+        let pt_diff = chara.rank.rati - *chara.hist.old_rate.front().unwrap();
         let rk_diff: isize =
-            ranks[&character.id] as isize - *character.hist.old_rank.front().unwrap() as isize;
+            ranks[&chara.id] as isize - *chara.hist.old_rank.front().unwrap() as isize;
         println!(
             "    {} {:.0} {} {}.",
             if pt_diff > 0.0 {
@@ -107,40 +113,63 @@ pub fn stat(character: &Character, ranked_chara: &[Character], ranks: &HashMap<u
     // Rank informations
     println!("\n==> {}", "RANKINGS");
     // Overall ranks
-    let slice = get_slice_in_ranked_chara(character, ranked_chara);
+    let slice = get_slice_in_ranked_chara(chara, ranked_chara);
     println!(
         "\n  - {:<42}{:>8}",
         "Overall",
-        format!("#{}/{}", ranks[&character.id], ranked_chara.len())
+        format!("#{}/{}", ranks[&chara.id], ranked_chara.len())
     );
     println!("    {:-<50}", "");
     for c in slice.iter() {
         print_rank_entry(c, ranks[&c.id], 4);
     }
 
-    // All the other ranks
-    // if full_rankings {
-    //     for tag in chara.groups.iter() {
-    //         stats::print_rank_in_group(chara, vec![(tag.clone(), INCLUSIVE)], touhous);
-    //     }
-    // } else {
-    //     println!("\n    ⓘ For rankings in various works, use `stat!`");
-    // }
-
     // Stats
     println!("\n==> {}", "STATISTICS");
-    let total = character.hist.battles();
+    let total = chara.hist.battles();
     println!(
         "    Wins:   {} ({}%)",
-        character.hist.wins,
+        chara.hist.wins,
         if total == 0 {
             0
         } else {
-            100 * character.hist.wins / total
+            100 * chara.hist.wins / total
         }
     );
-    println!("    Draws:  {}", character.hist.draw);
-    println!("    Losses: {}", character.hist.loss);
+    println!("    Draws:  {}", chara.hist.draw);
+    println!("    Losses: {}", chara.hist.loss);
+
+    // Recent battles
+    if !chara.hist.recent.is_empty() {
+        println!("\n==> {}", "RECENT BATTLES");
+    }
+    for m in chara.hist.recent.iter() {
+        let msg = match m.res {
+            MatchResult::Draw => "Drew",
+            MatchResult::BothLose => "Drew (lost)",
+            MatchResult::AWin => {
+                if m.a == chara.id {
+                    "Won"
+                } else {
+                    "Lost"
+                }
+            }
+            MatchResult::BWin => {
+                if m.b == chara.id {
+                    "Won"
+                } else {
+                    "Lost"
+                }
+            }
+        };
+        let oppo = if m.a == chara.id { m.b } else { m.a };
+        println!(
+            "    {} against {} ({:.0})",
+            msg, characters[oppo].name, characters[oppo].rank.rati
+        );
+    }
+
+    println!();
 }
 
 pub fn list_ranking(ranked_chara: &[Character], ranks: &HashMap<usize, usize>) {

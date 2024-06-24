@@ -34,17 +34,17 @@ fn main() {
             update_history(&mut characters, &records, &ranks);
             calculate_results(&mut characters, &records);
             (ranked_chara, ranks) = calculate_ranking(&characters);
-        } else if choice.starts_with("list") {
+        } else if choice.starts_with("l") {
             list_ranking(&ranked_chara, &ranks);
         } else if choice.starts_with("stat") {
             match choice.split_off(4).trim().parse::<usize>() {
-                Ok(id) => stat(&characters[id], &ranked_chara, &ranks),
+                Ok(id) => stat(&characters[id], &characters, &ranked_chara, &ranks),
                 Err(_) => {
                     display::lobby_stat_help();
                     continue;
                 }
             }
-        } else if choice.starts_with("help") {
+        } else if choice.starts_with("h") {
             display::lobby_help();
         } else {
             break;

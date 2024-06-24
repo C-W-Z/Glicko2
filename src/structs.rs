@@ -40,8 +40,11 @@ pub struct History {
     pub wins: usize,
     pub loss: usize,
     pub draw: usize,
-    pub old_rate: VecDeque<f64>, // tracks the rating and rank some sessions ago
+    // tracks the rating and rank some sessions ago
+    pub old_rate: VecDeque<f64>,
     pub old_rank: VecDeque<usize>,
+    // tracks recent matches
+    pub recent: VecDeque<Match>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -78,6 +81,7 @@ impl History {
             draw: (0),
             old_rate: VecDeque::new(),
             old_rank: VecDeque::new(),
+            recent: VecDeque::new(),
         }
     }
     pub fn battles(&self) -> usize {
@@ -105,10 +109,11 @@ pub fn initialize_characters() -> Vec<Character> {
     let mut read = read_characters();
 
     if read.is_empty() {
+        println!("Initialize from {}", INIT_PATH);
         return init;
     }
 
-    // println!("Read {} Success", DATA_PATH);
+    println!("Read data from {}", DATA_PATH);
     let read_len = read.len();
 
     let mut init_name_id: HashMap<String, usize> = HashMap::new();
@@ -125,7 +130,7 @@ pub fn initialize_characters() -> Vec<Character> {
 
     if read.len() != read_len {
         println!("{:-<1$}", "", 36);
-        println!("Find new characters in init.txt");
+        println!("Find new characters in {}", INIT_PATH);
         for c in read[read_len..].iter() {
             println!("#{}: {}", c.id, c.name);
         }
@@ -147,7 +152,7 @@ pub fn initialize_characters() -> Vec<Character> {
     read.sort_by_key(|c| c.id);
     if read.len() != init.len() {
         println!("{:-<1$}", "", 36);
-        println!("Find some characters not in init.txt");
+        println!("Find some characters not in {}", INIT_PATH);
         for c in read[init.len()..].iter() {
             println!("#{}: {}", c.id, c.name);
         }
