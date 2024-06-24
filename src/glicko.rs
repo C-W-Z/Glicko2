@@ -1,6 +1,5 @@
 use crate::structs::{Battle, Character, Match, MatchResult};
-use std::collections::HashMap;
-use std::f64::consts::PI;
+use std::{collections::HashMap, f64::consts::PI};
 
 // The system constant which constrains the change in volatility over time, needs to be set prior to application of the system
 // Reasonable choices are between 0.3 and 1.2

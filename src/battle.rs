@@ -2,13 +2,13 @@ use crate::{
     display,
     structs::{Battle, BattleStat, Character, Match, MatchResult},
 };
-use rand::distributions::WeightedIndex;
-use rand::prelude::*;
+use rand::{distributions::WeightedIndex, prelude::*};
 use std::{
     collections::{HashMap, HashSet},
     io::{self, Write},
 };
 
+// The maximum number of recent battles
 const MAX_HIST: usize = 5;
 
 fn update_tmp_history(characters: &mut Vec<Character>, a: usize, b: usize) {

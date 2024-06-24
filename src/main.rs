@@ -8,12 +8,16 @@ mod display;
 mod glicko;
 mod structs;
 
-use crate::battle::battles;
-use crate::display::{list_ranking, stat};
-use crate::glicko::{calculate_ranking, calculate_results, update_history};
-use crate::structs::{initialize_characters, store_characters, Character};
-use std::collections::HashMap;
-use std::io::{self, Write};
+use crate::{
+    battle::battles,
+    display::{list_ranking, stat},
+    glicko::{calculate_ranking, calculate_results, update_history},
+    structs::{initialize_characters, store_characters, Character},
+};
+use std::{
+    collections::HashMap,
+    io::{self, Write},
+};
 
 fn main() {
     let (mut characters, name_to_id) = initialize_characters();
