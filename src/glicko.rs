@@ -1,4 +1,4 @@
-use crate::structs::{Character, Match, MatchResult};
+use crate::structs::{Battle, Character, Match, MatchResult};
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
@@ -211,8 +211,23 @@ pub fn update_history(
                 characters[m.b].hist.loss += 1;
             }
         };
-        characters[m.a].hist.recent.push_back(m.clone());
-        characters[m.b].hist.recent.push_back(m.clone());
+
+        let name_a = characters[m.a].name.clone();
+        let name_b = characters[m.b].name.clone();
+        let (res_a, res_b) = match m.res {
+            MatchResult::AWin => (MatchResult::AWin, MatchResult::BWin),
+            MatchResult::BWin => (MatchResult::BWin, MatchResult::AWin),
+            MatchResult::Draw => (MatchResult::Draw, MatchResult::Draw),
+            MatchResult::BothLose => (MatchResult::BothLose, MatchResult::BothLose),
+        };
+        characters[m.a]
+            .hist
+            .recent
+            .push_back(Battle::new(name_b, res_a));
+        characters[m.b]
+            .hist
+            .recent
+            .push_back(Battle::new(name_a, res_b));
         while characters[m.a].hist.recent.len() > MAX_HIST {
             characters[m.a].hist.recent.pop_front();
         }

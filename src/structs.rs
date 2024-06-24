@@ -29,6 +29,12 @@ pub struct Match {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Battle {
+    pub oppo: String, // opponent's name
+    pub res: MatchResult, // AWins for I win, BWins for I lose
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Rank {
     pub rati: f64, // rating
     pub devi: f64, // rating deviation
@@ -44,7 +50,7 @@ pub struct History {
     pub old_rate: VecDeque<f64>,
     pub old_rank: VecDeque<usize>,
     // tracks recent matches
-    pub recent: VecDeque<Match>,
+    pub recent: VecDeque<Battle>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -53,6 +59,25 @@ pub struct Character {
     pub name: String,
     pub rank: Rank,    // glicko ranking information
     pub hist: History, // historical stats
+}
+
+impl Match {
+    pub fn new(a: usize, b: usize, res: MatchResult) -> Self {
+        Self {
+            a: (a),
+            b: (b),
+            res: (res),
+        }
+    }
+}
+
+impl Battle {
+    pub fn new(oppo: String, res: MatchResult) -> Self {
+        Self {
+            oppo: (oppo),
+            res: (res),
+        }
+    }
 }
 
 impl Rank {
@@ -103,14 +128,18 @@ impl Character {
 const DATA_PATH: &str = "src/data.json";
 const INIT_PATH: &str = "src/init.txt";
 
-pub fn initialize_characters() -> Vec<Character> {
+pub fn initialize_characters() -> (Vec<Character>, HashMap<String, usize>) {
     // Try read data from file
     let init = read_init_characters();
     let mut read = read_characters();
+    let mut name_to_id: HashMap<String, usize> = HashMap::new();
 
     if read.is_empty() {
         println!("Initialize from {}", INIT_PATH);
-        return init;
+        for c in init.iter() {
+            name_to_id.insert(c.name.clone(), c.id);
+        }
+        return (init, name_to_id);
     }
 
     println!("Read data from {}", DATA_PATH);
@@ -168,11 +197,11 @@ pub fn initialize_characters() -> Vec<Character> {
         }
     }
 
-    // for c in read.iter() {
-    //     println!("#{}: {}", c.id, c.name);
-    // }
+    for c in read.iter() {
+        name_to_id.insert(c.name.clone(), c.id);
+    }
 
-    read
+    (read, name_to_id)
 }
 
 pub fn read_init_characters() -> Vec<Character> {

@@ -4,9 +4,12 @@ use crate::{
 };
 use rand::distributions::WeightedIndex;
 use rand::prelude::*;
-use std::io::{self, Write};
+use std::{
+    collections::{HashMap, HashSet},
+    io::{self, Write}
+};
 
-fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
+fn pick_2_player_ids(pool: &[Character], name_to_id: &HashMap<String, usize>) -> (usize, usize) {
     let max = pool
         .iter()
         .max_by_key(|c| c.hist.battles())
@@ -17,7 +20,7 @@ fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
     // Calculate the weights (inverse of the battles)
     let weights: Vec<_> = pool
         .iter()
-        .map(|c: &Character| ((max - c.hist.battles()) as f64).exp2())
+        .map(|c: &Character| (2.0 * (max - c.hist.battles()) as f64).exp2())
         .collect();
 
     // Create a weighted index distribution
@@ -26,8 +29,15 @@ fn pick_2_player_ids(pool: &[Character]) -> (usize, usize) {
 
     // Select two distinct indices
     let first_index = distribution.sample(&mut rng);
+
+    // find recent opponents of first selected
+    let mut oppos: HashSet<usize> = HashSet::new();
+    for b in pool[first_index].hist.recent.iter() {
+        oppos.insert(name_to_id[&b.oppo]);
+    }
+
     let mut second_index = distribution.sample(&mut rng);
-    while second_index == first_index {
+    while second_index == first_index || oppos.contains(&second_index) {
         second_index = distribution.sample(&mut rng);
     }
 
@@ -84,12 +94,12 @@ fn fight(battle_id: usize, left: &str, right: &str) -> (MatchResult, BattleStat)
     }
 }
 
-pub fn battles(pool: &[Character]) -> Vec<Match> {
+pub fn battles(pool: &[Character], name_to_id: &HashMap<String, usize>) -> Vec<Match> {
     display::start_session(pool.len());
 
     let mut records: Vec<Match> = Vec::new();
 
-    let (mut left, mut right) = pick_2_player_ids(&pool);
+    let (mut left, mut right) = pick_2_player_ids(&pool, name_to_id);
 
     loop {
         let (res, stat) = fight(
@@ -100,12 +110,8 @@ pub fn battles(pool: &[Character]) -> Vec<Match> {
 
         match stat {
             BattleStat::Next => {
-                records.push(Match {
-                    a: (left),
-                    b: (right),
-                    res: (res),
-                });
-                (left, right) = pick_2_player_ids(&pool);
+                records.push(Match::new(left, right, res));
+                (left, right) = pick_2_player_ids(&pool, name_to_id);
             }
             BattleStat::End => {
                 break;

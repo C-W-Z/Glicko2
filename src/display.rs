@@ -40,6 +40,7 @@ fn get_slice_in_ranked_chara<'a>(
 pub fn stat(
     chara: &Character,
     characters: &[Character],
+    name_to_id: &HashMap<String, usize>,
     ranked_chara: &[Character],
     ranks: &HashMap<usize, usize>,
 ) {
@@ -147,25 +148,12 @@ pub fn stat(
         let msg = match m.res {
             MatchResult::Draw => "Drew",
             MatchResult::BothLose => "Drew (lost)",
-            MatchResult::AWin => {
-                if m.a == chara.id {
-                    "Won"
-                } else {
-                    "Lost"
-                }
-            }
-            MatchResult::BWin => {
-                if m.b == chara.id {
-                    "Won"
-                } else {
-                    "Lost"
-                }
-            }
+            MatchResult::AWin => "Won",
+            MatchResult::BWin => "Lost",
         };
-        let oppo = if m.a == chara.id { m.b } else { m.a };
         println!(
             "    {} against {} ({:.0})",
-            msg, characters[oppo].name, characters[oppo].rank.rati
+            msg, m.oppo, characters[name_to_id[&m.oppo]].rank.rati
         );
     }
 
@@ -191,7 +179,7 @@ pub fn lobby_help() {
 }
 
 pub fn lobby_stat_help() {
-    println!("usage: stat [character ID]");
+    println!("usage: stat <character name/ID>");
 }
 
 pub fn start_fight(battle_id: usize, left: &str, right: &str) {
